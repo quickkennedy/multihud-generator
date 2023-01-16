@@ -26,11 +26,23 @@ namespace MultiHud
             "resource/scheme/",
         };
 
+        readonly string[] classes = new string[] {
+            "scout",
+            "solly",
+            "pyro",
+            "demo",
+            "heavy",
+            "med",
+            "engi",
+            "sniper",
+            "spy",
+        };
+
         public Form1()
         {
             InitializeComponent();
 
-            generateCfgFiles(new string[] { "hudplayerclass" }, new string[] { "KILLME" });
+            generateCfgFiles(new string[] { "hudplayerclass" }, classes, new string[] { "resource/ui/hudplayerclass.res" });
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -162,19 +174,74 @@ namespace MultiHud
 
         private List<string[]> CfgFile3(string[] files, string[] names)
         {
+            /*
+                // clear files
+                sixense_clear_bindings
+                sixense_write_bindings file1.txt
+                sixense_write_bindings file2.txt
+
+                // shared setup
+                con_filter_text #base
+                con_filter_enable 1
+
+                // file 1
+                con_logfile cfg/file1.txt
+                exec hud/file1.cfg
+
+                // file 2
+                con_logfile cfg/file2.txt
+                exec hud/file2.cfg
+
+                // cleanup
+                con_logfile console.log
+                hud_reloadscheme
+            */
+
+            // 12 + 4 * file
+
             List<string[]> output = new List<string[]>();
 
             foreach (string name in names)
             {
-                string[] cfgfile = new string[files.Length];
+                string[] cfgfile = new string[13 + 4 * files.Length];
 
-                int counter = 0;
+                /*
+                // clear files
+                sixense_clear_bindings
+                sixense_write_bindings file1.txt
+                sixense_write_bindings file2.txt
+
+                // shared setup
+                con_filter_text #base
+                con_filter_enable 1
+                */
+
+                cfgfile[0] = "// clear files";
+                cfgfile[1] = "sixense_clear_bindings";
+                cfgfile[2] = "sixense_write_bindings file1.txt";
+                cfgfile[3] = "sixense_write_bindings file2.txt";
+                cfgfile[4] = "";
+                cfgfile[5] = "// shared setup";
+                cfgfile[6] = "con_filter_text #base";
+                cfgfile[7] = "con_filter_enable 1";
+                cfgfile[8] = "";
+
+                int counter = 9;
 
                 foreach (string file in files)
                 {
-                    cfgfile[counter] = file + "_" + name;
+                    /*
                     
-                    ++counter;
+                    // file 1
+                    con_logfile cfg/file1.txt
+                    exec hud/file1.cfg 
+                    */
+                    cfgfile[counter] = "// " + file;
+                    cfgfile[counter + 1] = "con_logfile cfg/" + file + ".txt";
+                    cfgfile[counter + 2] = "exec hud/" + file + ".cfg";
+                    cfgfile[counter + 3] = "";
+
+                    counter += 4;
                 }
 
                 output.Add(cfgfile);
@@ -183,9 +250,11 @@ namespace MultiHud
             return output;
         }
 
-        private void generateCfgFiles(string[] files, string[] names)
+        private void generateCfgFiles(string[] files, string[] names, string[] realfiles)
         {
             int counter = 0;
+
+            // .CFG INTERNAL
 
             if (!System.IO.Directory.Exists("hud_cfg_internal/cfg"))
             {
@@ -197,10 +266,18 @@ namespace MultiHud
                 System.IO.Directory.CreateDirectory("hud_cfg_internal/hud");
             }
 
+            // .CFG EXTERNAL
 
             if (!System.IO.Directory.Exists("hud_cfg_external/cfg"))
             {
                 System.IO.Directory.CreateDirectory("hud_cfg_external/cfg");
+            }
+
+            // .RES EXTERNAL
+
+            if (!System.IO.Directory.Exists("hud_res_external/resource"))
+            {
+                System.IO.Directory.CreateDirectory("hud_res_external/resource");
             }
 
             foreach (string file in files)
@@ -232,9 +309,49 @@ namespace MultiHud
 
                 ++counter;
             }
+
+            // fake res files
+
+            List<string[]> resfiles = new List<string[]>();
+
+            counter = 0;
+
+            foreach (string file in files)
+            {
+                resfiles.Add(Resfile(file, realfiles[counter]));
+
+                ++counter;
+            }
+
+            counter = 0;
+
+            foreach (string[] resfile in resfiles)
+            {
+                string[] dirAsArray = ("hud_res_external/" + realfiles[counter]).Split('/');
+
+                List<string> dirAsList = dirAsArray.ToList<string>();
+
+                dirAsList.RemoveAt(dirAsList.Count - 1);
+
+                string dirAsString = "";
+
+                foreach (string item in dirAsList)
+                {
+                    dirAsString += item + "/";
+                }
+
+                if (!System.IO.Directory.Exists(dirAsString))
+                {
+                    System.IO.Directory.CreateDirectory(dirAsString);
+                }
+
+                File.WriteAllLines("hud_res_external/" + realfiles[counter], resfile);
+
+                ++counter;
+            }
         }
 
-        private string[] Resfile(string file)
+        private string[] Resfile(string file, string realfile)
         {
             /*
                 #base "../../cfg/hud_hudplayerhealth.txt"
@@ -250,7 +367,7 @@ namespace MultiHud
                 "#base \"../../cfg/hud_" + file + ".txt\"",
                 "#base \"" + file + "_def.res\"",
                 "",
-                "\"Resource/UI/" + file + ".res\"",
+                "\"" + realfile + ".res\"",
                 "{",
                 "}"
             };
