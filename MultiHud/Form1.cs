@@ -277,16 +277,16 @@ namespace MultiHud
             
             // .CFG EXTERNAL
 
-            if (!System.IO.Directory.Exists("hud_cfg_external/cfg/swap"))
+            if (!System.IO.Directory.Exists("MULTIHUD/cfg/swap"))
             {
-                System.IO.Directory.CreateDirectory("hud_cfg_external/cfg/swap");
+                System.IO.Directory.CreateDirectory("MULTIHUD/cfg/swap");
             }
 
             // .RES EXTERNAL
 
-            if (!System.IO.Directory.Exists("hud_res_external/resource"))
+            if (!System.IO.Directory.Exists("MULTIHUD/resource"))
             {
-                System.IO.Directory.CreateDirectory("hud_res_external/resource");
+                System.IO.Directory.CreateDirectory("MULTIHUD/resource");
             }
 
             // files that once exec'd will swap entire huds
@@ -302,7 +302,7 @@ namespace MultiHud
 
             foreach (string[] hudcfgfile in hudcfgfiles)
             {
-                File.WriteAllLines("hud_cfg_external/cfg/swap/" + names3[counter] + ".cfg", hudcfgfile);
+                File.WriteAllLines("MULTIHUD/cfg/swap/" + names3[counter] + ".cfg", hudcfgfile);
 
                 ++counter;
             }
@@ -324,7 +324,7 @@ namespace MultiHud
 
             foreach (string[] resfile in resfiles)
             {
-                string[] dirAsArray = ("hud_res_external/" + realfiles[counter]).Split('/');
+                string[] dirAsArray = ("MULTIHUD/" + realfiles[counter]).Split('/');
 
                 List<string> dirAsList = dirAsArray.ToList<string>();
 
@@ -342,12 +342,12 @@ namespace MultiHud
                     System.IO.Directory.CreateDirectory(dirAsString);
                 }
 
-                File.WriteAllLines("hud_res_external/" + realfiles[counter], resfile);
+                File.WriteAllLines("MULTIHUD/" + realfiles[counter], resfile);
 
                 ++counter;
             }
 
-            File.WriteAllText("hud_res_external/info.vdf", "\"hud swapper\" { \"ui_version\" \"3\" }");
+            File.WriteAllText("MULTIHUD/info.vdf", "\"hud swapper\" { \"ui_version\" \"3\" }");
         }
 
         #endregion
