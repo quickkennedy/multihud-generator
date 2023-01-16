@@ -160,36 +160,78 @@ namespace MultiHud
             return output;
         }
 
-        private void generateCfgFiles(string[] files, string[] names)
+        private List<string[]> CfgFile3(string[] files, string[] names)
         {
-            if (!System.IO.Directory.Exists("hud_cfg/cfg"))
+            List<string[]> output = new List<string[]>();
+
+            foreach (string name in names)
             {
-                System.IO.Directory.CreateDirectory("hud_cfg/cfg");
+                string[] cfgfile = new string[files.Length];
+
+                int counter = 0;
+
+                foreach (string file in files)
+                {
+                    cfgfile[counter] = file + "_" + name;
+                    
+                    ++counter;
+                }
+
+                output.Add(cfgfile);
             }
 
-            if (!System.IO.Directory.Exists("hud_cfg/hud"))
+            return output;
+        }
+
+        private void generateCfgFiles(string[] files, string[] names)
+        {
+            int counter = 0;
+
+            if (!System.IO.Directory.Exists("hud_cfg_internal/cfg"))
             {
-                System.IO.Directory.CreateDirectory("hud_cfg/hud");
+                System.IO.Directory.CreateDirectory("hud_cfg_internal/cfg");
+            }
+
+            if (!System.IO.Directory.Exists("hud_cfg_internal/hud"))
+            {
+                System.IO.Directory.CreateDirectory("hud_cfg_internal/hud");
+            }
+
+
+            if (!System.IO.Directory.Exists("hud_cfg_external/cfg"))
+            {
+                System.IO.Directory.CreateDirectory("hud_cfg_external/cfg");
             }
 
             foreach (string file in files)
             {
                 string[] txt = CfgFile(file, names);
 
-                File.WriteAllLines("hud_cfg/cfg/" + file + ".txt", txt);
+                File.WriteAllLines("hud_cfg_internal/cfg/" + file + ".txt", txt);
 
                 string[] cfgs = CfgFile2(file, names);
 
-                int counter = 0;
+                counter = 0;
 
                 foreach (string cfg in cfgs)
                 {
-                    File.WriteAllText("hud_cfg/hud/" + file + "_" + names[counter] + ".cfg", cfg);
+                    File.WriteAllText("hud_cfg_internal/hud/" + file + "_" + names[counter] + ".cfg", cfg);
                     
                     ++counter;
                 }
             }
-            
+
+            // files that once exec'd will swap entire huds
+            List<string[]> hudcfgfiles = CfgFile3(files, names); // OWNED
+
+            counter = 0;
+
+            foreach (string[] hudcfgfile in hudcfgfiles)
+            {
+                File.WriteAllLines("hud_cfg_external/cfg/" + names[counter] + ".cfg", hudcfgfile);
+
+                ++counter;
+            }
         }
 
         private string[] Resfile(string file)
