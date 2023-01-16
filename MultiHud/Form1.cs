@@ -42,7 +42,7 @@ namespace MultiHud
         {
             InitializeComponent();
 
-            generateCfgFiles(new string[] { "hudplayerclass" }, classes, new string[] { "resource/ui/hudplayerclass.res" });
+            Generate(new string[] { "hudplayerhealth" }, new string[] { "scout" }, new string[] { "resource/ui/hudplayerhealth.res" });
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -69,7 +69,7 @@ namespace MultiHud
         {
             if (filePath1 != null && filePath2 != null)
             {
-                Generate();
+                Scan();
             }
             else // either one of them is null so user fucked up and didnt select a hud properly
             {
@@ -77,7 +77,9 @@ namespace MultiHud
             }
         }
 
-        private void Generate()
+        #region SCAN
+
+        private void Scan()
         {
             string[] _;
 
@@ -119,60 +121,13 @@ namespace MultiHud
             {
                 hud2TXT.Push(file.FullName);
             }
-
-            
         }
 
-        private string[] CfgFile(string file, string[] names)
-        {
-            /*
-                alias hudplayerhealth_clear "sixense_clear_bindings; sixense_write_bindings hud_hudplayerhealth.txt"
-                alias hudplayerhealth_log "con_filter_text #base; con_filter_enable 1; con_logfile cfg/hud_hudplayerhealth.txt"
-                alias hudplayerhealth_unlog "con_logfile console.log"
+        #endregion
 
-                alias hudplayerhealth_alt "hudplayerhealth_clear; hudplayerhealth_log; exec hud/hudplayerhealth_alt.cfg; hudplayerhealth_unlog; hud_reloadscheme"
-                alias hudplayerhealth_def "hudplayerhealth_clear; hud_reloadscheme"
-            */
+        #region FILE METHODS
 
-            string[] output = new string[5 + names.Length];
-
-            output[0] = "alias " + file + "_clear \"sixense_clear_bindings; sixense_write_bindings hud_" + file + ".txt\"";
-            output[1] = "alias " + file + "_log \"con_filter_text #base; con_filter_enable 1; con_logfile cfg/hud_" + file + ".txt\"";
-            output[2] = "alias " + file + "_unlog \"con_logfile console.log\"";
-
-            int counter = 4;
-
-            foreach (string name in names)
-            {
-                output[counter] = "alias " + file + "_" + name + " \"" + file + "_clear; " + file + "_log; exec hud/" + file + "_" + name + ".cfg; " + file + "_unlog; hud_reloadscheme\"";
-                
-                counter++;
-            }
-
-            output[output.Length - 1] = "alias " + file + "_def \"" + file + " _clear; hud_reloadscheme\"";
-
-            return output;
-        }
-
-        private string[] CfgFile2(string file, string[] names)
-        {
-            //echo "#base ../resource/ui/hudplayerhealth_alt.res"
-
-            string[] output = new string[names.Length];
-
-            int counter = 0;
-
-            foreach (string name in names)
-            {
-                output[counter] = "echo \"#base ../resource/ui/" + file + "_" + name + ".res\"";
-
-                ++counter;
-            }
-
-            return output;
-        }
-
-        private List<string[]> CfgFile3(string[] files, string[] names)
+        private List<string[]> CfgFile(string[] files, string[] realfiles, string[] names)
         {
             /*
                 // clear files
@@ -201,9 +156,15 @@ namespace MultiHud
 
             List<string[]> output = new List<string[]>();
 
-            foreach (string name in names)
+            List<string> names2 = names.ToList<string>();
+
+            names2.Add("def");
+
+            string[] names3 = names2.ToArray();
+
+            foreach (string name in names3)
             {
-                string[] cfgfile = new string[13 + 4 * files.Length];
+                string[] cfgfile = new string[10 + 5 * files.Length];
 
                 /*
                 // clear files
@@ -218,15 +179,25 @@ namespace MultiHud
 
                 cfgfile[0] = "// clear files";
                 cfgfile[1] = "sixense_clear_bindings";
-                cfgfile[2] = "sixense_write_bindings file1.txt";
-                cfgfile[3] = "sixense_write_bindings file2.txt";
-                cfgfile[4] = "";
-                cfgfile[5] = "// shared setup";
-                cfgfile[6] = "con_filter_text #base";
-                cfgfile[7] = "con_filter_enable 1";
-                cfgfile[8] = "";
 
-                int counter = 9;
+                int counter3 = 2;
+
+                foreach (string file in files)
+                {
+                    cfgfile[counter3] = "sixense_write_bindings " + file + ".txt";
+
+                    ++counter3;
+                }
+
+                cfgfile[counter3] = "";
+                cfgfile[counter3 + 1] = "// shared setup";
+                cfgfile[counter3 + 2] = "con_filter_text #base";
+                cfgfile[counter3 + 3] = "con_filter_enable 1";
+                cfgfile[counter3 + 4] = "";
+
+                int counter = counter3 + 5;
+
+                int counter2 = 0;
 
                 foreach (string file in files)
                 {
@@ -238,11 +209,33 @@ namespace MultiHud
                     */
                     cfgfile[counter] = "// " + file;
                     cfgfile[counter + 1] = "con_logfile cfg/" + file + ".txt";
-                    cfgfile[counter + 2] = "exec hud/" + file + ".cfg";
+                    //cfgfile[counter + 2] = "exec hud/" + file + "_" + name + ".cfg";
+                    //echo "#base ../resource/ui/hudplayerhealth_scout.res"
+
+                    string realfile = realfiles[counter2].Substring(0, realfiles[counter2].Length - 4); // removes .res
+
+                    //MessageBox.Show(realfile);
+
+                    cfgfile[counter + 2] = "echo \"#base ../" + realfile + "_" + name + ".res\"";
+
                     cfgfile[counter + 3] = "";
 
                     counter += 4;
+
+                    ++counter2;
                 }
+
+                /*
+                
+                // cleanup
+                con_logfile console.log
+                hud_reloadscheme
+                */
+
+                cfgfile[cfgfile.Length - 4] = "";
+                cfgfile[cfgfile.Length - 3] = "// cleanup";
+                cfgfile[cfgfile.Length - 2] = "con_logfile console.log";
+                cfgfile[cfgfile.Length - 1] = "hud_reloadscheme";
 
                 output.Add(cfgfile);
             }
@@ -250,27 +243,43 @@ namespace MultiHud
             return output;
         }
 
-        private void generateCfgFiles(string[] files, string[] names, string[] realfiles)
+        private string[] ResFile(string file, string realfile)
+        {
+            /*
+                #base "../../cfg/hud_hudplayerhealth.txt"
+                #base "hudplayerhealth_def.res"
+
+                "Resource/UI/HudPlayerHealth.res"
+                {	
+                }
+            */
+
+            return new string[]
+            {
+                "#base \"../../cfg/" + file + ".txt\"",
+                "#base \"" + file + "_def.res\"",
+                "",
+                "\"" + realfile + "\"",
+                "{",
+                "}"
+            };
+        }
+
+        #endregion
+
+        #region GENERATE
+
+        private void Generate(string[] files, string[] names, string[] realfiles)
         {
             int counter = 0;
 
             // .CFG INTERNAL
-
-            if (!System.IO.Directory.Exists("hud_cfg_internal/cfg"))
-            {
-                System.IO.Directory.CreateDirectory("hud_cfg_internal/cfg");
-            }
-
-            if (!System.IO.Directory.Exists("hud_cfg_internal/hud"))
-            {
-                System.IO.Directory.CreateDirectory("hud_cfg_internal/hud");
-            }
-
+            
             // .CFG EXTERNAL
 
-            if (!System.IO.Directory.Exists("hud_cfg_external/cfg"))
+            if (!System.IO.Directory.Exists("hud_cfg_external/cfg/swap"))
             {
-                System.IO.Directory.CreateDirectory("hud_cfg_external/cfg");
+                System.IO.Directory.CreateDirectory("hud_cfg_external/cfg/swap");
             }
 
             // .RES EXTERNAL
@@ -280,32 +289,20 @@ namespace MultiHud
                 System.IO.Directory.CreateDirectory("hud_res_external/resource");
             }
 
-            foreach (string file in files)
-            {
-                string[] txt = CfgFile(file, names);
-
-                File.WriteAllLines("hud_cfg_internal/cfg/" + file + ".txt", txt);
-
-                string[] cfgs = CfgFile2(file, names);
-
-                counter = 0;
-
-                foreach (string cfg in cfgs)
-                {
-                    File.WriteAllText("hud_cfg_internal/hud/" + file + "_" + names[counter] + ".cfg", cfg);
-                    
-                    ++counter;
-                }
-            }
-
             // files that once exec'd will swap entire huds
-            List<string[]> hudcfgfiles = CfgFile3(files, names); // OWNED
+            List<string[]> hudcfgfiles = CfgFile(files, realfiles, names); // OWNED
 
             counter = 0;
 
+            List<string> names2 = names.ToList<string>();
+
+            names2.Add("def");
+
+            string[] names3 = names2.ToArray();
+
             foreach (string[] hudcfgfile in hudcfgfiles)
             {
-                File.WriteAllLines("hud_cfg_external/cfg/" + names[counter] + ".cfg", hudcfgfile);
+                File.WriteAllLines("hud_cfg_external/cfg/swap/" + names3[counter] + ".cfg", hudcfgfile);
 
                 ++counter;
             }
@@ -318,7 +315,7 @@ namespace MultiHud
 
             foreach (string file in files)
             {
-                resfiles.Add(Resfile(file, realfiles[counter]));
+                resfiles.Add(ResFile(file, realfiles[counter]));
 
                 ++counter;
             }
@@ -349,28 +346,10 @@ namespace MultiHud
 
                 ++counter;
             }
+
+            File.WriteAllText("hud_res_external/info.vdf", "\"hud swapper\" { \"ui_version\" \"3\" }");
         }
 
-        private string[] Resfile(string file, string realfile)
-        {
-            /*
-                #base "../../cfg/hud_hudplayerhealth.txt"
-                #base "hudplayerhealth_def.res"
-
-                "Resource/UI/HudPlayerHealth.res"
-                {	
-                }
-            */
-
-            return new string[]
-            {
-                "#base \"../../cfg/hud_" + file + ".txt\"",
-                "#base \"" + file + "_def.res\"",
-                "",
-                "\"" + realfile + ".res\"",
-                "{",
-                "}"
-            };
-        }
+        #endregion
     }
 }
