@@ -33,7 +33,7 @@ namespace MultiHud
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.RichTextBox();
             this.SuspendLayout();
             // 
             // button1
@@ -78,12 +78,11 @@ namespace MultiHud
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 123);
+            this.label1.Location = new System.Drawing.Point(12, 126);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(56, 13);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "replaceme";
+            this.label1.Size = new System.Drawing.Size(630, 229);
+            this.label1.TabIndex = 5;
+            this.label1.Text = "";
             // 
             // Form1
             // 
@@ -109,7 +108,7 @@ namespace MultiHud
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.CheckBox checkBox1;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.RichTextBox label1;
     }
 }
 
