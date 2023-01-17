@@ -164,12 +164,13 @@ namespace MultiHud
 
             foreach (HudFile hudFile in hud1RES)
             {
-                if (hudFile.realfile.Contains("resource/ui/") || hudFile.realfile.Contains("scripts/")) // verifies its in the folders i'm allowing (:<
+                if (hudFile.realfile.Contains(@"resource\ui\") || hudFile.realfile.Contains(@"scripts\")) // verifies its in the folders i'm allowing (:<
                 {
                     string file = File.ReadAllText(hudFile.realfile);
                     
                     if (!(file.Contains("event") && file.Contains("animate"))) // verifies its not an animation
                     {
+                        //label1.Text += hudFile.realfile + Environment.NewLine;
                         hud1.Add(hudFile);
                     }
                 }
@@ -192,9 +193,11 @@ namespace MultiHud
 
             int removeText;
 
-            removeText = filePath1.Length + 1;
+            removeText = filePath1.Length;
 
             List<HudFile> iohud1 = new List<HudFile>();
+
+            label1.Text += "hud1 " + "(" + hud1.Count + ")" + Environment.NewLine;
 
             foreach (HudFile hudFile in hud1)
             {
@@ -204,24 +207,28 @@ namespace MultiHud
                 newHudFile.realfile = hudFile.realfile;
 
                 //newHudFile.realfile.Replace(@"\", "/");
-                newHudFile.realfile = ".." + hudFile.realfile.Substring(removeText);
+                newHudFile.realfile = hudFile.realfile.Substring(removeText);
 
                 iohud1.Add(newHudFile);
             }
+
+            label1.Text += "iohud " + "(" + iohud1.Count + ")" + Environment.NewLine;
 
             // copy dirs to avoid io errors
             CopyDirs(filePath1, "MULTIHUD");
 
             for (int i = 0; i < iohud1.Count; ++i)
             {
-                string dest = @"MULTIHUD\" + iohud1[i].realfile.Substring(2);
+                string dest = @"MULTIHUD\" + iohud1[i].realfile.Substring(1);
 
-                dest = dest.Substring(0, dest.Length - 4) + "_scout.res";
+                dest = dest.Substring(0, dest.Length - 4) + "_def.res";
+
+                //label1.Text += dest + Environment.NewLine;
 
                 File.Copy(hud1[i].realfile, dest, true);
             }
 
-            removeText = filePath2.Length + 1;
+            removeText = filePath2.Length;
 
             List<HudFile> iohud2 = new List<HudFile>();
 
@@ -233,7 +240,7 @@ namespace MultiHud
                 newHudFile.realfile = hudFile.realfile;
 
                 //newHudFile.realfile.Replace(@"\", "/");
-                newHudFile.realfile = ".." + hudFile.realfile.Substring(removeText);
+                newHudFile.realfile = hudFile.realfile.Substring(removeText);
 
                 iohud2.Add(newHudFile);
             }
@@ -243,7 +250,7 @@ namespace MultiHud
 
             for (int i = 0; i < iohud2.Count; ++i)
             {
-                string dest = @"MULTIHUD\" + iohud2[i].realfile.Substring(2);
+                string dest = @"MULTIHUD\" + iohud2[i].realfile.Substring(1);
 
                 dest = dest.Substring(0, dest.Length - 4) + "_scout.res";
 
@@ -261,13 +268,19 @@ namespace MultiHud
                 "scout"
             };
 
+            label1.Text += "generating iohud " + "(" + iohud1.Count + ")" + Environment.NewLine;
+
             foreach (HudFile hudFile in iohud1)
             {
+                //label1.Text += hudFile.realfile + " - " + hudFile.fakefile + Environment.NewLine;
                 files.Add(hudFile.realfile);
                 fakefiles.Add(hudFile.fakefile);
             }
 
+
             Generate(fakefiles.ToArray(), files.ToArray(), names);
+
+            label1.Text += "finished generation! safe to exit now." + Environment.NewLine;
 
             #endregion
 
@@ -334,7 +347,11 @@ namespace MultiHud
 
                 foreach (string file in files)
                 {
-                    cfgfile[counter3] = "sixense_write_bindings " + file + ".txt";
+                    string newfile = file;
+
+                    newfile = newfile.Substring(0, newfile.Length - 4);
+
+                    cfgfile[counter3] = "sixense_write_bindings " + newfile + ".txt";
 
                     ++counter3;
                 }
@@ -357,8 +374,13 @@ namespace MultiHud
                     con_logfile cfg/file1.txt
                     exec hud/file1.cfg 
                     */
-                    cfgfile[counter] = "// " + file;
-                    cfgfile[counter + 1] = "con_logfile cfg/" + file + ".txt";
+
+                    string newfile = file;
+
+                    newfile = newfile.Substring(0, newfile.Length - 4);
+
+                    cfgfile[counter] = "// " + newfile;
+                    cfgfile[counter + 1] = "con_logfile cfg/" + newfile + ".txt";
                     //cfgfile[counter + 2] = "exec hud/" + file + "_" + name + ".cfg";
                     //echo "#base ../resource/ui/hudplayerhealth_scout.res"
 
@@ -366,7 +388,7 @@ namespace MultiHud
 
                     //MessageBox.Show(realfile);
 
-                    cfgfile[counter + 2] = "echo \"#base ../" + realfile + "_" + name + ".res\"";
+                    cfgfile[counter + 2] = "echo \"#base .." + realfile + "_" + name + ".res\"";
 
                     cfgfile[counter + 3] = "";
 
@@ -404,15 +426,34 @@ namespace MultiHud
                 }
             */
 
-            return new string[]
+            string newfile = file;
+
+            newfile = newfile.Substring(0, newfile.Length - 4);
+
+            if (newfile == "hudlayout")
             {
-                "#base \"../../cfg/" + file + ".txt\"",
-                "#base \"" + file + "_def.res\"",
-                "",
-                "\"" + realfile + "\"",
-                "{",
-                "}"
-            };
+                return new string[]
+                {
+                    "#base \"../cfg/" + newfile + ".txt\"",
+                    "#base \"" + newfile + "_def.res\"",
+                    "",
+                    "\"" + realfile + "\"",
+                    "{",
+                    "}"
+                };
+            }
+            else
+            {
+                return new string[]
+                {
+                    "#base \"../../cfg/" + newfile + ".txt\"",
+                    "#base \"" + newfile + "_def.res\"",
+                    "",
+                    "\"" + realfile + "\"",
+                    "{",
+                    "}"
+                };
+            }
         }
 
         #endregion
