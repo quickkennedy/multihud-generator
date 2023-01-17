@@ -13,6 +13,14 @@ namespace MultiHud
 {
     public partial class Form1 : Form
     {
+        public class HudFile
+        {
+            public string fakefile;
+            public string realfile;
+        }
+
+        List<string> log = new List<string>();
+
         string filePath1 = null;
         string filePath2 = null;
 
@@ -42,7 +50,8 @@ namespace MultiHud
         {
             InitializeComponent();
 
-            Generate(new string[] { "hudplayerhealth" }, new string[] { "scout" }, new string[] { "resource/ui/hudplayerhealth.res" });
+            // GENERATE takes some file names that dont have a path nor a .res at the end, one variant besides def, and a list of the real files (relative to one folder into custom)
+            //Generate(new string[] { "hudplayerhealth" }, new string[] { "scout" }, new string[] { "resource/ui/hudplayerhealth.res" });
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -52,6 +61,8 @@ namespace MultiHud
             if (selecthud1.ShowDialog() == DialogResult.OK)
             {
                 filePath1 = selecthud1.SelectedPath;
+
+                label1.Text += filePath1 + " selected as first hud" + Environment.NewLine;
             }
         }
 
@@ -62,6 +73,8 @@ namespace MultiHud
             if (selecthud1.ShowDialog() == DialogResult.OK)
             {
                 filePath2 = selecthud1.SelectedPath;
+
+                label1.Text += filePath2 + " selected as second hud" + Environment.NewLine;
             }
         }
 
@@ -69,6 +82,8 @@ namespace MultiHud
         {
             if (filePath1 != null && filePath2 != null)
             {
+                label1.Text += "finished copy! scanning directories for useful files." + Environment.NewLine;
+
                 Scan();
             }
             else // either one of them is null so user fucked up and didnt select a hud properly
@@ -83,44 +98,179 @@ namespace MultiHud
         {
             string[] _;
 
-            _ = filePath1.Split('/');
-            string hud1 = _[_.Length];
+            //_ = filePath1.Split('/');
+            //string hud1 = _[_.Length];
             
-            _ = filePath2.Split('/');
-            string hud2 = _[_.Length];
+            //_ = filePath2.Split('/');
+            //string hud2 = _[_.Length];
 
             DirectoryInfo hud1DIRECTORY = new DirectoryInfo(filePath1);
             DirectoryInfo hud2DIRECTORY = new DirectoryInfo(filePath2);
 
-            Stack<string> hud1RES = new Stack<string>();
-            Stack<string> hud2RES = new Stack<string>();
+            List<HudFile> hud1RES = new List<HudFile>();
+            List<HudFile> hud2RES = new List<HudFile>();
 
-            Stack<string> hud1TXT = new Stack<string>();
-            Stack<string> hud2TXT = new Stack<string>();
+            List<HudFile> hud1TXT = new List<HudFile>();
+            List<HudFile> hud2TXT = new List<HudFile>();
 
             // RES FILES
             
-            foreach (FileInfo file in hud1DIRECTORY.GetFiles("*.res"))
+            foreach (FileInfo file in hud1DIRECTORY.GetFiles("*.res", SearchOption.AllDirectories))
             {
-                hud1RES.Push(file.FullName);
+                HudFile hudFile = new HudFile();
+
+                hudFile.fakefile = file.Name;
+                hudFile.realfile = file.FullName;
+
+                hud1RES.Add(hudFile);
             }
 
-            foreach (FileInfo file in hud2DIRECTORY.GetFiles("*.res"))
+            foreach (FileInfo file in hud2DIRECTORY.GetFiles("*.res", SearchOption.AllDirectories))
             {
-                hud2RES.Push(file.FullName);
+                HudFile hudFile = new HudFile();
+
+                hudFile.fakefile = file.Name;
+                hudFile.realfile = file.FullName;
+
+                hud2RES.Add(hudFile);
             }
 
             // TXT FILES
 
-            foreach (FileInfo file in hud1DIRECTORY.GetFiles("*.txt"))
+            foreach (FileInfo file in hud1DIRECTORY.GetFiles("*.txt", SearchOption.AllDirectories))
             {
-                hud1TXT.Push(file.FullName);
+                HudFile hudFile = new HudFile();
+
+                hudFile.fakefile = file.Name;
+                hudFile.realfile = file.FullName;
+
+                hud1TXT.Add(hudFile);
             }
 
-            foreach (FileInfo file in hud2DIRECTORY.GetFiles("*.txt"))
+            foreach (FileInfo file in hud2DIRECTORY.GetFiles("*.txt", SearchOption.AllDirectories))
             {
-                hud2TXT.Push(file.FullName);
+                HudFile hudFile = new HudFile();
+
+                hudFile.fakefile = file.Name;
+                hudFile.realfile = file.FullName;
+
+                hud2TXT.Add(hudFile);
             }
+
+            // FILE VALIDATION
+
+            List<HudFile> hud1 = new List<HudFile>();
+            List<HudFile> hud2 = new List<HudFile>();
+
+            foreach (HudFile hudFile in hud1RES)
+            {
+                if (hudFile.realfile.Contains("resource/ui/") || hudFile.realfile.Contains("scripts/")) // verifies its in the folders i'm allowing (:<
+                {
+                    string file = File.ReadAllText(hudFile.realfile);
+                    
+                    if (!(file.Contains("event") && file.Contains("animate"))) // verifies its not an animation
+                    {
+                        hud1.Add(hudFile);
+                    }
+                }
+            }
+
+            foreach (HudFile hudFile in hud2RES)
+            {
+                if (hudFile.realfile.Contains(@"resource\ui\") || hudFile.realfile.Contains(@"scripts\")) // verifies its in the folders i'm allowing (:<
+                {
+                    string file = File.ReadAllText(hudFile.realfile);
+
+                    if (!(file.Contains("event") && file.Contains("animate"))) // verifies its not an animation
+                    {
+                        hud2.Add(hudFile);
+                    }
+                }
+            }
+
+            #region COPY FILES OVER
+
+            int removeText;
+
+            removeText = filePath1.Length + 1;
+
+            List<HudFile> iohud1 = new List<HudFile>();
+
+            foreach (HudFile hudFile in hud1)
+            {
+                HudFile newHudFile = new HudFile();
+
+                newHudFile.fakefile = hudFile.fakefile;
+                newHudFile.realfile = hudFile.realfile;
+
+                //newHudFile.realfile.Replace(@"\", "/");
+                newHudFile.realfile = ".." + hudFile.realfile.Substring(removeText);
+
+                iohud1.Add(newHudFile);
+            }
+
+            // copy dirs to avoid io errors
+            CopyDirs(filePath1, "MULTIHUD");
+
+            for (int i = 0; i < iohud1.Count; ++i)
+            {
+                string dest = @"MULTIHUD\" + iohud1[i].realfile.Substring(2);
+
+                dest = dest.Substring(0, dest.Length - 4) + "_scout.res";
+
+                File.Copy(hud1[i].realfile, dest, true);
+            }
+
+            removeText = filePath2.Length + 1;
+
+            List<HudFile> iohud2 = new List<HudFile>();
+
+            foreach (HudFile hudFile in hud2)
+            {
+                HudFile newHudFile = new HudFile();
+
+                newHudFile.fakefile = hudFile.fakefile;
+                newHudFile.realfile = hudFile.realfile;
+
+                //newHudFile.realfile.Replace(@"\", "/");
+                newHudFile.realfile = ".." + hudFile.realfile.Substring(removeText);
+
+                iohud2.Add(newHudFile);
+            }
+
+            // copy dirs to avoid io errors
+            CopyDirs(filePath2, "MULTIHUD");
+
+            for (int i = 0; i < iohud2.Count; ++i)
+            {
+                string dest = @"MULTIHUD\" + iohud2[i].realfile.Substring(2);
+
+                dest = dest.Substring(0, dest.Length - 4) + "_scout.res";
+
+                File.Copy(hud2[i].realfile, dest, true);
+            }
+
+            #endregion
+
+            #region GENERATION
+
+            List<string> files = new List<string>();
+            List<string> fakefiles = new List<string>();
+            string[] names = new string[]
+            {
+                "scout"
+            };
+
+            foreach (HudFile hudFile in iohud1)
+            {
+                files.Add(hudFile.realfile);
+                fakefiles.Add(hudFile.fakefile);
+            }
+
+            Generate(fakefiles.ToArray(), files.ToArray(), names);
+
+            #endregion
+
         }
 
         #endregion
@@ -269,7 +419,7 @@ namespace MultiHud
 
         #region GENERATE
 
-        private void Generate(string[] files, string[] names, string[] realfiles)
+        private void Generate(string[] files, string[] realfiles, string[] names)
         {
             int counter = 0;
 
@@ -351,5 +501,65 @@ namespace MultiHud
         }
 
         #endregion
+
+        #region COPY
+        
+        private void CopyDirs(string sourceDir, string destinationDir)
+        {
+            if (!Directory.Exists(destinationDir))
+            {
+                Directory.CreateDirectory(destinationDir);
+            }
+            // as stolen from https://code-maze.com/copy-entire-directory-charp/
+
+            var allDirectories = Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories);
+            foreach (string dir in allDirectories)
+            {
+                string dirToCreate = dir.Replace(sourceDir, destinationDir);
+                Directory.CreateDirectory(dirToCreate);
+            }
+        }
+
+        private void CopyFile(string sourceFile, string destinationFile)
+        {
+            File.Copy(sourceFile, destinationFile, true);
+        }
+
+        private void Copy(string sourceDir, string destinationDir)
+        {
+            if (!Directory.Exists(destinationDir))
+            {
+                Directory.CreateDirectory(destinationDir);
+            }
+            // as stolen from https://code-maze.com/copy-entire-directory-charp/
+
+            var allDirectories = Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories);
+            foreach (string dir in allDirectories)
+            {
+                string dirToCreate = dir.Replace(sourceDir, destinationDir);
+                Directory.CreateDirectory(dirToCreate);
+            }
+
+            var allFiles = Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories);
+            foreach (string newPath in allFiles)
+            {
+                try
+                {
+                    File.Copy(newPath, newPath.Replace(sourceDir, destinationDir), true);
+                }
+                catch (Exception e)
+                {
+                    label1.Text += e.ToString() + Environment.NewLine;
+                }
+            }
+        }
+
+
+        #endregion
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            label1.Text = "";
+        }
     }
 }
